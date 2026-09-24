@@ -2,7 +2,7 @@
 
 **AI & Data Automation · Python · SQL · LLMs · ERP integrations**
 
-I founded and ran OH My Chalk!, a paint brand sold through a B2B network across Argentina. I led its sales and marketing teams, moved the company from a CRM (Pipedrive) to an ERP (Odoo), and in 2026 built the data and automation systems it runs on. This repository collects those tools, published with anonymized or synthetic data.
+I founded and ran OH My Chalk!, a paint brand sold through a B2B network across Argentina. I led its sales and marketing teams, set up its CRM (Pipedrive), led and implemented its move to an ERP (Odoo), and in 2026 built the data and automation systems it runs on. This repository collects those tools, published with anonymized or synthetic data.
 
 **Website with live demo:** https://facundoradicich.github.io/portfolio/ · **Resume:** [EN](docs/Facundo_Radicich_CV_EN.pdf) · [ES](docs/Facundo_Radicich_CV_ES.pdf)
 
