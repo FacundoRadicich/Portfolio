@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .env
 *.pdf
+!samples/resumen_macro_demo.pdf

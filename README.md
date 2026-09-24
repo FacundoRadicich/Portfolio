@@ -16,7 +16,7 @@ I founded and ran OH My Chalk!, a paint brand sold through a B2B network across 
 | [CRM Sales Effort Analysis](projects/crm-sales-effort) | 2,563 Pipedrive deals: strategic accounts bring 20% of revenue with 6% of the effort. | pandas, matplotlib, Power BI |
 | [Customer Churn Model](projects/churn-model) | Five classifiers compared with cross-validation and ROC-AUC, explainability check, cost-based threshold. | scikit-learn |
 | [Workshop Marketplace](projects/workshop-marketplace) | Teachers publish painting workshops; students book; public map of ~550 points of sale with store self-validation. [Live app](https://omc-marketplace.vercel.app). | Next.js 16, TypeScript, Prisma, Postgres |
-| [Expense Tracker](projects/expense-tracker) | Extracts and categorizes transactions from credit-card PDF statements of six banks. | Streamlit, pdfplumber, Supabase |
+| [Expense Tracker](projects/expense-tracker) | Extracts and categorizes transactions from credit-card PDF statements of six banks. [Live demo](https://dr-contable-demo.streamlit.app/). | Streamlit, pdfplumber, Supabase |
 
 ## About the data
 No real customer, supplier or financial data is published here. Store and customer lists were replaced with fictional records, prices and deal values were randomized or rescaled, and credentials were moved to environment variables.

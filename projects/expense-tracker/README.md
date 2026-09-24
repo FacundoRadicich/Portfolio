@@ -1,6 +1,6 @@
 # Expense Tracker ("Dr. Contable")
 
-**Python · Streamlit · pdfplumber · pandas · Plotly · Supabase**
+**Python · Streamlit · pdfplumber · pandas · Plotly · Supabase** · [Live demo](https://dr-contable-demo.streamlit.app/)
 
 A personal-finance app built for a family member: upload the monthly credit-card and wallet statements as PDFs and get every transaction extracted, categorized and charted, instead of typing them into a spreadsheet.
 
