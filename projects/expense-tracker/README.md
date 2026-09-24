@@ -12,11 +12,16 @@ A personal-finance app built for a family member: upload the monthly credit-card
 - **Dashboard:** monthly spend by category, evolution over time, USD transactions converted with the exchange rate.
 - **Auth:** Supabase email login with password recovery.
 
+## Demo mode
+When no Supabase credentials are configured, the app starts in **demo mode**: no login, six months of fictional transactions across three cards, and an in-memory database (`db/demo_client.py`) that mimics the Supabase query builder, so every screen runs unchanged. Nothing is saved; each visitor gets a fresh copy.
+
+To try the PDF reader, download the fictional statement from the sidebar (`samples/resumen_macro_demo.pdf`) and upload it in **Cargar PDF**: the Macro parser extracts its 10 transactions, installments included, and categorizes them.
+
 ## Run locally
 ```bash
 pip install -r requirements.txt
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # fill in Supabase URL/key
-streamlit run app.py
+streamlit run app.py        # demo mode, no setup needed
+# for the real app: cp .streamlit/secrets.toml.example .streamlit/secrets.toml and fill in Supabase URL/key
 ```
 SQL for the extra tables is in `scripts/`.
 

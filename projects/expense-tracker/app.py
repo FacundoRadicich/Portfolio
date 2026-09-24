@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import streamlit as st
 import streamlit.components.v1 as components
-from db.supabase_client import get_client, restore_session, get_current_user_id
+from db.supabase_client import get_client, restore_session, get_current_user_id, is_demo
 
 st.set_page_config(
     page_title="Dr. Contable",
@@ -160,14 +162,33 @@ def render_auth() -> None:
                         st.error(f"Error: {e}")
 
 
+def _start_demo_session() -> None:
+    from db.demo_client import DEMO_EMAIL, DEMO_USER_ID
+    st.session_state.setdefault("user_id", DEMO_USER_ID)
+    st.session_state.setdefault("user_email", DEMO_EMAIL)
+
+
+def _render_demo_sidebar() -> None:
+    st.info("Demo con datos ficticios. Los cambios duran solo esta sesión.")
+    sample = Path(__file__).parent / "samples" / "resumen_macro_demo.pdf"
+    if sample.exists():
+        st.download_button("Descargar resumen PDF de prueba", sample.read_bytes(),
+                           file_name=sample.name, mime="application/pdf", use_container_width=True)
+        st.caption("Subilo en **Cargar PDF** para ver cómo se lee y categoriza.")
+
+
 def main() -> None:
-    _inject_hash_redirect()
-    restore_session()
+    demo = is_demo()
+    if demo:
+        _start_demo_session()
+    else:
+        _inject_hash_redirect()
+        restore_session()
 
     is_recovery = st.query_params.get("type") == "recovery" and (
         st.query_params.get("token_hash") or st.query_params.get("access_token")
     )
-    if is_recovery:
+    if is_recovery and not demo:
         render_password_recovery()
         return
 
@@ -189,8 +210,10 @@ def main() -> None:
             label_visibility="collapsed",
         )
         st.markdown("---")
+        if demo:
+            _render_demo_sidebar()
         st.caption(f"👤 {st.session_state.get('user_email', '')}")
-        if st.button("Cerrar sesión", use_container_width=True):
+        if not demo and st.button("Cerrar sesión", use_container_width=True):
             get_client().auth.sign_out()
             for key in ["access_token", "refresh_token", "user_id", "user_email"]:
                 st.session_state.pop(key, None)

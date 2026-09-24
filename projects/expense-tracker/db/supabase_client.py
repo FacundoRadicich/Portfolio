@@ -1,11 +1,26 @@
+import os
+
 import streamlit as st
 from supabase import create_client, Client
 
 _client: Client | None = None
 
 
+def is_demo() -> bool:
+    """Public demo: no Supabase credentials configured (or DEMO_MODE=1)."""
+    if os.environ.get("DEMO_MODE") == "1":
+        return True
+    try:
+        return "supabase" not in st.secrets
+    except Exception:  # no secrets.toml at all
+        return True
+
+
 def get_client() -> Client:
     global _client
+    if is_demo():
+        from db.demo_client import DemoClient
+        return DemoClient()
     if _client is None:
         url = st.secrets["supabase"]["url"]
         key = st.secrets["supabase"]["key"]
