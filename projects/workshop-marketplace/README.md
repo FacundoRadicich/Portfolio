@@ -1,6 +1,6 @@
 # Workshop Marketplace
 
-**Next.js 16 · React 19 · TypeScript · Prisma 7 · Supabase (Postgres + Auth) · Tailwind 4 · Leaflet**
+**Next.js 16 · React 19 · TypeScript · Prisma 7 · Supabase (Postgres + Auth) · Tailwind 4 · Leaflet** · [Live app on Vercel](https://omc-marketplace.vercel.app)
 
 A marketplace that connects the brand's community with the teachers who run chalk-paint workshops across Argentina, plus a public map of the stores that sell the products.
 

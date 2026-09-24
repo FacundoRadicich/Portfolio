@@ -15,7 +15,7 @@ I founded and ran OH My Chalk!, a paint brand sold through a B2B network across 
 | [B2B Sales Intelligence](projects/sales-intelligence-demo) | Sales dashboard with repurchase tracking and an interactive lead-scoring model. [Live demo](https://facundoradicich.github.io/Portfolio/sales-intelligence.html). | JavaScript, SVG |
 | [CRM Sales Effort Analysis](projects/crm-sales-effort) | 2,563 Pipedrive deals: strategic accounts bring 20% of revenue with 6% of the effort. | pandas, matplotlib, Power BI |
 | [Customer Churn Model](projects/churn-model) | Five classifiers compared with cross-validation and ROC-AUC, explainability check, cost-based threshold. | scikit-learn |
-| [Workshop Marketplace](projects/workshop-marketplace) | Teachers publish painting workshops; students book; public map of ~550 points of sale with store self-validation. | Next.js 16, TypeScript, Prisma, Postgres |
+| [Workshop Marketplace](projects/workshop-marketplace) | Teachers publish painting workshops; students book; public map of ~550 points of sale with store self-validation. [Live app](https://omc-marketplace.vercel.app). | Next.js 16, TypeScript, Prisma, Postgres |
 | [Expense Tracker](projects/expense-tracker) | Extracts and categorizes transactions from credit-card PDF statements of six banks. | Streamlit, pdfplumber, Supabase |
 
 ## About the data
