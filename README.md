@@ -22,4 +22,4 @@ I founded and ran OH My Chalk!, a paint brand sold through a B2B network across 
 No real customer, supplier or financial data is published here. Store and customer lists were replaced with fictional records, prices and deal values were randomized or rescaled, and credentials were moved to environment variables.
 
 ## Contact
-facundoradicich@gmail.com · [LinkedIn](https://www.linkedin.com/in/facundoradicich-8b1931130) · Buenos Aires, Argentina (open to remote)
+facundoradicich@gmail.com · [LinkedIn](https://www.linkedin.com/in/facundo-radicich-8b1931130) · Buenos Aires, Argentina (open to remote)
