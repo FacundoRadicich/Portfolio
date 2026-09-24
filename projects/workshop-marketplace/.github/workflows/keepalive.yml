@@ -1,0 +1,25 @@
+name: Supabase keep-alive
+
+# Evita que el proyecto Supabase (free tier) se pause por inactividad:
+# hace un request REST liviano cada 3 días (la pausa ocurre a los ~7 días sin actividad).
+# Requiere los secrets de repo: SUPABASE_URL y SUPABASE_ANON_KEY.
+
+on:
+  schedule:
+    - cron: "0 6 */3 * *"   # cada 3 días, 06:00 UTC
+  workflow_dispatch: {}       # permite ejecutarlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/?select=*")
+          echo "HTTP $code"
+          if [ "$code" -ge 500 ]; then
+            echo "Supabase respondió $code (¿pausado/caído?)"; exit 1
+          fi

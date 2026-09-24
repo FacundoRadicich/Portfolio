@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Professor {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  bio         String
+  photoUrl    String
+  coverUrl    String?
+  tier        Tier       @default(COLABORADORA)
+  whatsapp    String
+  instagram   String?
+  facebook    String?
+  specialties String[]
+  province    String
+  city        String
+  active      Boolean    @default(true)
+  userId      String?    @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workshops   Workshop[]
+}
+
+model Workshop {
+  id          String                  @id @default(cuid())
+  slug        String                  @unique
+  title       String
+  description String
+  photoUrl    String
+  date        DateTime
+  duration    String
+  price       Int?
+  province    String
+  city        String
+  maxSpots    Int?
+  whatsappMsg String
+  whatsappNum String
+  active      Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  professor   Professor               @relation(fields: [professorId], references: [id])
+  professorId String
+  categories  CategoriesOnWorkshops[]
+}
+
+model Category {
+  id        String                  @id @default(cuid())
+  name      String                  @unique
+  workshops CategoriesOnWorkshops[]
+}
+
+model CategoriesOnWorkshops {
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  workshopId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
+  @@id([workshopId, categoryId])
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  city      String
+  createdAt DateTime @default(now())
+}
+
+enum Tier {
+  EMBAJADORA
+  INSTRUCTORA
+  COLABORADORA
+}
+
+// ─── Puntos de venta (mapa "dónde comprar" + autovalidación) ───
+
+enum Canal {
+  MINORISTA
+  MAYORISTA
+  AMBOS
+}
+
+model Cliente {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  validationToken String     @unique
+  razonSocial     String
+  cuit            String?
+  canal           Canal      @default(MINORISTA)
+  destacado       Boolean    @default(false)
+  aprobado        Boolean    @default(true)   // false = alta nueva pendiente de aprobación admin
+  talleres        String[]   @default([])
+  whatsapp        String?
+  phone           String?
+  email           String?
+  instagram       String?
+  facebook        String?
+  tiendaOnline    String?
+  web             String?
+  active          Boolean    @default(true)
+  validatedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  sucursales      Sucursal[]
+}
+
+model Sucursal {
+  id           String   @id @default(cuid())
+  cliente      Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  clienteId    String
+  nombre       String
+  tipo         String
+  phone        String?
+  whatsapp     String?
+  address      String?
+  barrio       String?
+  localidad    String?
+  provincia    String?
+  codigoPostal String?
+  pais         String   @default("Argentina")
+  horario      String?
+  descripcion  String?
+  tiendaOnline String?
+  web          String?
+  instagram    String?
+  facebook     String?
+  lat          Float?
+  lng          Float?
+  // Campos internos (solo OMC, no se muestran al comprador) — exposición por local
+  exhibidorPie          Boolean?
+  exhibidorMostrador    Boolean?
+  muestrasPintadas      Boolean?
+  muestrarioActualizado Boolean?
+  comentarios           String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  eventos      Event[]
+  resenas      Resena[]
+
+  @@index([provincia])
+}
+
+model Event {
+  id           String    @id @default(cuid())
+  type         String
+  sucursal     Sucursal? @relation(fields: [sucursalId], references: [id], onDelete: SetNull)
+  sucursalId   String?
+  query        String?
+  localidad    String?
+  resultsCount Int?
+  anonId       String?
+  createdAt    DateTime  @default(now())
+
+  @@index([type, createdAt])
+  @@index([sucursalId])
+}
+
+model Resena {
+  id         String   @id @default(cuid())
+  sucursal   Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
+  sucursalId String
+  rating     Int
+  consiguio  Boolean?
+  comentario String?
+  estado     String   @default("PENDIENTE")
+  anonId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([sucursalId, estado])
+}

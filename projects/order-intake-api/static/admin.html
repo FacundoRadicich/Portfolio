@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OH MY CHALK — Panel Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #F7F3EE; --chalk: #EDE8E0; --ink: #1A1714;
+    --rose: #C97B6E; --rose-light: #E8B4AC; --sage: #8A9E8C;
+    --warm-grey: #9E9590; --border: #D8D0C7;
+    --red: #C0392B; --yellow: #E67E22; --green: #27AE60;
+  }
+  html { background: var(--ink); }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  header { background: var(--ink); color: var(--cream); padding: 20px 48px; display: flex; align-items: center; justify-content: space-between; }
+  .header-brand { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: var(--rose-light); }
+  .header-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--cream); }
+  .header-nav { display: flex; gap: 24px; align-items: center; }
+  .header-link { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); text-decoration: none; transition: color 0.2s; }
+  .header-link:hover { color: var(--rose-light); }
+  .header-logout { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); cursor: pointer; border: none; background: none; font-family: 'DM Sans', sans-serif; transition: color 0.2s; }
+  .header-logout:hover { color: var(--rose-light); }
+
+  /* AUTH GUARD */
+  #auth-guard { position: fixed; inset: 0; background: var(--ink); display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.4s; }
+  #auth-guard.hidden { opacity: 0; pointer-events: none; }
+  .auth-msg { color: var(--cream); font-size: 14px; text-align: center; }
+  .auth-msg a { color: var(--rose-light); }
+
+  /* MAIN */
+  #app { display: none; flex-direction: column; }
+  #app.visible { display: flex; }
+
+  /* SUMMARY */
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 32px 48px 0; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .scard { background: white; border: 1px solid var(--border); padding: 20px 24px; }
+  .scard-label { font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 6px; }
+  .scard-val { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--ink); }
+  .scard-val.red { color: var(--red); }
+  .scard-val.yellow { color: var(--yellow); }
+  .scard-val.green { color: var(--green); }
+
+  /* FILTERS + TABLE */
+  .content { padding: 28px 48px 56px; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .toolbar-title { font-family: 'Playfair Display', serif; font-size: 20px; flex: 1; }
+  .filter-select { padding: 8px 12px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--ink); outline: none; cursor: pointer; }
+  .filter-select:focus { border-color: var(--rose); }
+
+  .table-wrap { background: white; border: 1px solid var(--border); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-grey); white-space: nowrap; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--chalk); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF9; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 9px; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 2px; }
+  .badge-prep { background: var(--chalk); color: var(--warm-grey); }
+  .badge-entregado { background: #EEF4EE; color: var(--green); }
+  .badge-cobrado { background: #E8F5E9; color: #1A6B3A; border: 1px solid #B8D9B8; }
+  .badge-comision-pend { background: var(--chalk); color: var(--warm-grey); }
+  .badge-comision-apr { background: #FFF8E1; color: #B8860B; }
+  .badge-comision-ok { background: #E8F5E9; color: #1A6B3A; }
+
+  .alerta-red { color: var(--red); font-weight: 500; font-size: 12px; }
+  .alerta-warn { color: var(--yellow); font-weight: 500; font-size: 12px; }
+
+  /* ACTIONS */
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .act-btn { padding: 4px 10px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; color: var(--ink); white-space: nowrap; }
+  .act-btn:hover { border-color: var(--ink); background: var(--ink); color: var(--cream); }
+  .act-btn.primary { border-color: var(--sage); color: var(--sage); }
+  .act-btn.primary:hover { background: var(--sage); color: white; border-color: var(--sage); }
+  .act-btn.danger { border-color: var(--rose); color: var(--rose); }
+  .act-btn.danger:hover { background: var(--rose); color: white; }
+
+  /* MODAL */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(26,23,20,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .modal-backdrop.hidden { display: none; }
+  .modal { background: var(--cream); padding: 40px; width: 100%; max-width: 460px; position: relative; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 24px; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 6px; }
+  .modal-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); outline: none; }
+  .modal-input:focus { border-color: var(--rose); }
+  .modal-select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); outline: none; appearance: none; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+  .btn-cancel { padding: 10px 20px; background: transparent; color: var(--ink); border: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+  .btn-save { padding: 10px 24px; background: var(--ink); color: var(--cream); border: none; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn-save:hover { background: var(--rose); }
+
+  .toast { position: fixed; bottom: 32px; right: 32px; background: var(--ink); color: var(--cream); padding: 14px 24px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  .empty-state { padding: 60px; text-align: center; color: var(--warm-grey); font-size: 14px; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--rose); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 900px) {
+    .summary { grid-template-columns: repeat(2, 1fr); padding: 20px; }
+    .content { padding: 20px; }
+    header { padding: 16px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH GUARD -->
+<div id="auth-guard">
+  <div class="auth-msg">
+    <span class="spinner" style="border-top-color:var(--rose-light);"></span><br><br>
+    Verificando acceso...<br><small><a href="/">Volver al inicio</a></small>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <span class="header-brand">Oh My Chalk</span>
+    <span class="header-title">Panel Administrativo</span>
+    <div class="header-nav">
+      <a href="/" class="header-link">Cargar pedido</a>
+      <button class="header-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+  <!-- RESUMEN -->
+  <div class="summary">
+    <div class="scard">
+      <div class="scard-label">Total pedidos</div>
+      <div class="scard-val" id="sum-total">—</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Comisiones pendientes</div>
+      <div class="scard-val yellow" id="sum-pend">—</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Comisiones pagadas</div>
+      <div class="scard-val green" id="sum-paga">—</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Cobros vencidos</div>
+      <div class="scard-val red" id="sum-venc">—</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Cobros a validar</div>
+      <div class="scard-val yellow" id="sum-validar">—</div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="content">
+    <div class="toolbar">
+      <div class="toolbar-title">Todos los Pedidos</div>
+      <select class="filter-select" id="fil-corredor" onchange="renderTabla()">
+        <option value="">Todos los corredores</option>
+      </select>
+      <select class="filter-select" id="fil-estado" onchange="renderTabla()">
+        <option value="">Todos los estados</option>
+        <option value="en_preparacion">En preparación</option>
+        <option value="entregado">Entregado</option>
+        <option value="cobrado">Cobrado</option>
+      </select>
+      <select class="filter-select" id="fil-comision" onchange="renderTabla()">
+        <option value="">Todas las comisiones</option>
+        <option value="pendiente">Comisión pendiente</option>
+        <option value="aprobada">Comisión aprobada</option>
+        <option value="pagada">Comisión pagada</option>
+      </select>
+      <button class="act-btn" onclick="toggleSeccionCorredores()" style="margin-left:auto;" id="btn-toggle-corredores">Corredores ▾</button>
+    </div>
+
+    <!-- SECCIÓN CORREDORES -->
+    <div id="seccion-corredores" style="display:none; margin-bottom:28px; background:white; border:1px solid var(--border); padding:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span style="font-family:'Playfair Display',serif; font-size:18px;">Corredores activos</span>
+        <button class="btn-save" style="padding:8px 18px; font-size:11px;" onclick="abrirNuevoCorredor()">+ Agregar corredor</button>
+      </div>
+      <div id="corredores-lista" style="font-size:13px;">
+        <span style="color:var(--warm-grey);">Cargando...</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Corredor</th>
+            <th>Valor</th>
+            <th>Fecha pedido</th>
+            <th>Entrega est.</th>
+            <th>Estado</th>
+            <th>Cobro / Alerta</th>
+            <th>Comisión</th>
+            <th>Estado comisión</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body">
+          <tr><td colspan="10" class="empty-state"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: nuevo corredor -->
+<div class="modal-backdrop hidden" id="modal-corredor">
+  <div class="modal">
+    <div class="modal-title">Agregar corredor</div>
+    <div class="modal-field">
+      <label class="modal-label">Nombre completo</label>
+      <input type="text" class="modal-input" id="corr-nombre" placeholder="Ej: Juan García">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Email</label>
+      <input type="email" class="modal-input" id="corr-email" placeholder="juan@ejemplo.com">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Comisión (%)</label>
+      <input type="number" class="modal-input" id="corr-comision" value="7" min="0" max="100" step="0.5">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-corredor')">Cancelar</button>
+      <button class="btn-save" onclick="guardarCorredor()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: cambiar estado -->
+<div class="modal-backdrop hidden" id="modal-estado">
+  <div class="modal">
+    <div class="modal-title">Cambiar estado</div>
+    <div class="modal-field">
+      <label class="modal-label">Nuevo estado</label>
+      <select class="modal-select" id="input-estado">
+        <option value="en_preparacion">En preparación</option>
+        <option value="entregado">Entregado</option>
+        <option value="cobrado">Cobrado</option>
+      </select>
+    </div>
+    <div class="modal-field" id="campo-fecha-entrega">
+      <label class="modal-label">Fecha de entrega real</label>
+      <input type="date" class="modal-input" id="input-fecha-entrega">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-estado')">Cancelar</button>
+      <button class="btn-save" onclick="guardarEstado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: registrar cobro -->
+<div class="modal-backdrop hidden" id="modal-cobro">
+  <div class="modal">
+    <div class="modal-title">Registrar cobro</div>
+    <div class="modal-field">
+      <label class="modal-label">Fecha de cobro</label>
+      <input type="date" class="modal-input" id="input-fecha-cobro">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Forma de pago</label>
+      <select class="modal-select" id="input-forma-pago">
+        <option value="transferencia">Transferencia</option>
+        <option value="echeq">E-cheq</option>
+        <option value="cheque">Cheque</option>
+        <option value="efectivo">Efectivo</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-cobro')">Cancelar</button>
+      <button class="btn-save" onclick="guardarCobro()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: comisión -->
+<div class="modal-backdrop hidden" id="modal-comision">
+  <div class="modal">
+    <div class="modal-title">Estado de comisión</div>
+    <div class="modal-field">
+      <label class="modal-label">Estado</label>
+      <select class="modal-select" id="input-comision-estado">
+        <option value="pendiente">Pendiente</option>
+        <option value="aprobada">Aprobada</option>
+        <option value="pagada">Pagada</option>
+      </select>
+    </div>
+    <div class="modal-field" id="campo-fecha-comision">
+      <label class="modal-label">Fecha de pago de comisión</label>
+      <input type="date" class="modal-input" id="input-fecha-comision">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-comision')">Cancelar</button>
+      <button class="btn-save" onclick="guardarComision()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: factura -->
+<div class="modal-backdrop hidden" id="modal-factura">
+  <div class="modal">
+    <div class="modal-title">Cargar factura</div>
+    <div class="modal-field">
+      <label class="modal-label">Valor de la factura ($)</label>
+      <input type="number" class="modal-input" id="fac-valor" min="0" step="0.01">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Archivo (PDF, imagen)</label>
+      <input type="file" class="modal-input" id="fac-file" accept=".pdf,.jpg,.jpeg,.png" style="padding:8px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-factura')">Cancelar</button>
+      <button class="btn-save" onclick="guardarFactura()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: nota de crédito -->
+<div class="modal-backdrop hidden" id="modal-nc">
+  <div class="modal">
+    <div class="modal-title">Nota de crédito</div>
+    <div class="modal-field">
+      <label class="modal-label">Valor a descontar ($)</label>
+      <input type="number" class="modal-input" id="nc-valor" min="0" step="0.01">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Archivo (PDF, imagen)</label>
+      <input type="file" class="modal-input" id="nc-file" accept=".pdf,.jpg,.jpeg,.png" style="padding:8px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-nc')">Cancelar</button>
+      <button class="btn-save" onclick="guardarNC()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: validar cobro (corredor subió comprobante) -->
+<div class="modal-backdrop hidden" id="modal-validar-cobro">
+  <div class="modal">
+    <div class="modal-title">Validar cobro</div>
+    <p style="font-size:13px;color:var(--warm-grey);margin-bottom:20px;">El corredor subió el comprobante. Revisalo y confirmá que el cobro es correcto.</p>
+    <div style="margin-bottom:20px;">
+      <button class="act-btn primary" style="width:100%;padding:10px;" onclick="verDocAdmin(pedidoActivo,'comprobante-cobro')">Ver comprobante del corredor</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-validar-cobro')">Cancelar</button>
+      <button class="btn-save" onclick="confirmarValidarCobro()">Confirmar cobro ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: comisión con o sin comprobante -->
+<div class="modal-backdrop hidden" id="modal-comision">
+  <div class="modal">
+    <div class="modal-title">Estado de comisión</div>
+    <div class="modal-field">
+      <label class="modal-label">Estado</label>
+      <select class="modal-select" id="input-comision-estado" onchange="onComisionEstadoChange()">
+        <option value="pendiente">Pendiente</option>
+        <option value="aprobada">Aprobada</option>
+        <option value="pagada">Pagada</option>
+      </select>
+    </div>
+    <div id="comision-pagada-section" style="display:none;">
+      <div class="modal-field">
+        <label class="modal-label">Fecha de pago</label>
+        <input type="date" class="modal-input" id="input-fecha-comision">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Forma de pago de comisión</label>
+        <select class="modal-select" id="comision-forma" onchange="onComisionFormaChange()">
+          <option value="transferencia">Transferencia</option>
+          <option value="efectivo">Efectivo</option>
+        </select>
+      </div>
+      <div class="modal-field" id="comision-archivo-row">
+        <label class="modal-label">Comprobante (PDF, imagen)</label>
+        <input type="file" class="modal-input" id="comision-file" accept=".pdf,.jpg,.jpeg,.png" style="padding:8px;">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-comision')">Cancelar</button>
+      <button class="btn-save" onclick="guardarComision()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+let sb = null;
+let SESSION = null;
+let pedidos = [];
+let pedidoActivo = null;
+const ADMIN_EMAIL = '';  // se detecta automáticamente
+
+async function initSupabase() {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.supabase_enabled) {
+      const { createClient } = window.supabase;
+      sb = createClient(cfg.supabase_url, cfg.supabase_anon_key);
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        SESSION = session;
+        onLoggedIn();
+        return;
+      }
+    }
+    // No hay sesión → redirigir
+    document.getElementById('auth-guard').innerHTML =
+      '<div class="auth-msg">Acceso denegado.<br><a href="/">Ir al login</a></div>';
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function authHeaders() {
+  return SESSION?.access_token ? { 'Authorization': `Bearer ${SESSION.access_token}` } : {};
+}
+
+document.addEventListener('DOMContentLoaded', initSupabase);
+
+async function onLoggedIn() {
+  // Verificar que sea admin intentando cargar datos de admin
+  try {
+    const r = await fetch('/api/status', { headers: authHeaders() });
+    if (r.status === 403) {
+      document.getElementById('auth-guard').innerHTML =
+        '<div class="auth-msg">Solo el admin puede ver este panel.<br><a href="/dashboard">Ir a mi panel</a></div>';
+      return;
+    }
+  } catch {}
+
+  document.getElementById('auth-guard').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  await cargarDatos();
+}
+
+function logout() {
+  if (sb) sb.auth.signOut();
+  SESSION = null;
+  window.location.href = '/';
+}
+
+async function cargarDatos() {
+  try {
+    const [resR, pedR, corrR] = await Promise.all([
+      fetch('/api/dashboard/resumen', { headers: authHeaders() }),
+      fetch('/api/pedidos', { headers: authHeaders() }),
+      fetch('/api/corredores', { headers: authHeaders() }),
+    ]);
+
+    if (resR.ok) {
+      const res = await resR.json();
+      document.getElementById('sum-total').textContent   = res.total_pedidos;
+      document.getElementById('sum-pend').textContent    = formatPeso(res.comision_pendiente);
+      document.getElementById('sum-paga').textContent    = formatPeso(res.comision_pagada);
+      document.getElementById('sum-venc').textContent    = res.vencidos;
+      document.getElementById('sum-validar').textContent = res.cobros_a_validar;
+    }
+
+    if (pedR.ok) { pedidos = await pedR.json(); }
+
+    if (corrR.ok) {
+      const corredores = await corrR.json();
+      const sel = document.getElementById('fil-corredor');
+      corredores.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id; opt.textContent = c.nombre;
+        sel.appendChild(opt);
+      });
+    }
+
+    renderTabla();
+  } catch (e) { console.error(e); }
+}
+
+function renderTabla() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const filCorredor = document.getElementById('fil-corredor').value;
+  const filEstado   = document.getElementById('fil-estado').value;
+  const filComision = document.getElementById('fil-comision').value;
+
+  let rows = pedidos;
+  if (filCorredor) rows = rows.filter(p => p.corredor_id === filCorredor);
+  if (filEstado)   rows = rows.filter(p => p.estado === filEstado);
+  if (filComision) rows = rows.filter(p => p.comision_estado === filComision);
+
+  const body = document.getElementById('tabla-body');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="10" class="empty-state">Sin resultados para los filtros aplicados</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(p => {
+    const corrNombre = p.corredores?.nombre || '—';
+    const estadoBadge = {
+      'en_preparacion': '<span class="badge badge-prep">En prep.</span>',
+      'entregado':      '<span class="badge badge-entregado">Entregado</span>',
+      'cobrado':        '<span class="badge badge-cobrado">Cobrado</span>',
+    }[p.estado] || p.estado;
+
+    let alertaHtml = '—';
+    if (p.estado === 'entregado' && !p.fecha_cobro && p.fecha_entrega_real) {
+      const entrega = new Date(p.fecha_entrega_real);
+      const dias = Math.floor((hoy - entrega) / 86400000);
+      alertaHtml = dias >= 30
+        ? `<span class="alerta-red">🔴 ${dias}d vencido</span>`
+        : dias >= 20
+        ? `<span class="alerta-warn">🟡 ${dias}d por vencer</span>`
+        : `${dias}d`;
+    } else if (p.estado === 'cobrado' && p.fecha_cobro) {
+      const fp = p.forma_pago ? ` (${p.forma_pago})` : '';
+      alertaHtml = `✓ ${formatFecha(p.fecha_cobro)}${fp}`;
+      if (p.dias_al_cobro != null) alertaHtml += ` — ${p.dias_al_cobro}d`;
+    }
+
+    const comBadge = {
+      'pendiente': '<span class="badge badge-comision-pend">Pendiente</span>',
+      'aprobada':  '<span class="badge badge-comision-apr">Aprobada</span>',
+      'pagada':    '<span class="badge badge-comision-ok">Pagada</span>',
+    }[p.comision_estado] || p.comision_estado;
+
+    return `<tr>
+      <td><strong>${p.cliente}</strong></td>
+      <td>${corrNombre}</td>
+      <td>
+        <span>${formatPeso(p.valor_neto ?? p.valor_factura ?? p.valor_estimado)}</span>
+        <small style="display:block;font-size:10px;color:var(--warm-grey);">${p.valor_factura ? 'neto factura' : 'estimado'}</small>
+      </td>
+      <td>${formatFecha(p.fecha_pedido)}</td>
+      <td>${p.fecha_entrega_estimada ? formatFecha(p.fecha_entrega_estimada) : '—'}</td>
+      <td>${estadoBadge}</td>
+      <td style="font-size:12px;">${alertaHtml}</td>
+      <td><strong>${formatPeso(p.comision_monto)}</strong></td>
+      <td>${comBadge}</td>
+      <td>
+        <div class="actions">
+          <button class="act-btn" onclick="abrirEstado('${p.id}','${p.estado}')">Estado</button>
+          ${p.factura_url
+            ? `<button class="act-btn" onclick="verDocAdmin('${p.id}','factura')">Ver factura</button>`
+            : `<button class="act-btn primary" onclick="abrirFactura('${p.id}')">+ Factura</button>`}
+          ${p.nota_credito_url
+            ? `<button class="act-btn" onclick="verDocAdmin('${p.id}','nota-credito')">Ver NC</button>`
+            : `<button class="act-btn" onclick="abrirNC('${p.id}')">+ NC</button>`}
+          ${p.cobro_pendiente_validacion
+            ? `<button class="act-btn primary" onclick="abrirValidarCobro('${p.id}')">✓ Validar cobro</button>`
+            : p.estado !== 'cobrado'
+              ? `<button class="act-btn" onclick="abrirCobro('${p.id}')">Cobro efect.</button>`
+              : ''}
+          <button class="act-btn danger" onclick="abrirComision('${p.id}','${p.comision_estado}')">Comisión</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal: estado ─────────────────────────────────────────────────────────────
+function abrirEstado(id, estadoActual) {
+  pedidoActivo = id;
+  document.getElementById('input-estado').value = estadoActual;
+  toggleCampoFechaEntrega();
+  document.getElementById('input-estado').addEventListener('change', toggleCampoFechaEntrega);
+  abrirModal('modal-estado');
+}
+
+function toggleCampoFechaEntrega() {
+  const estado = document.getElementById('input-estado').value;
+  document.getElementById('campo-fecha-entrega').style.display =
+    estado === 'entregado' ? 'block' : 'none';
+}
+
+async function guardarEstado() {
+  const estado = document.getElementById('input-estado').value;
+  const fecha  = document.getElementById('input-fecha-entrega').value;
+  const fd = new FormData();
+  fd.append('estado', estado);
+  if (estado === 'entregado' && fecha) fd.append('fecha_entrega_real', fecha);
+
+  const r = await fetch(`/api/pedidos/${pedidoActivo}/estado`, {
+    method: 'PATCH', headers: authHeaders(), body: fd
+  });
+  if (r.ok) {
+    cerrarModal('modal-estado');
+    showToast('Estado actualizado');
+    await cargarDatos();
+  } else {
+    const e = await r.json();
+    showToast('Error: ' + e.detail, true);
+  }
+}
+
+// ── Cobro en efectivo (admin) ─────────────────────────────────────────────────
+function abrirCobro(id) {
+  pedidoActivo = id;
+  document.getElementById('input-fecha-cobro').value = new Date().toISOString().split('T')[0];
+  abrirModal('modal-cobro');
+}
+
+async function guardarCobro() {
+  const fecha = document.getElementById('input-fecha-cobro').value;
+  if (!fecha) return showToast('Ingresá la fecha de cobro', true);
+  const fd = new FormData();
+  fd.append('fecha_cobro', fecha);
+  const r = await fetch(`/api/pedidos/${pedidoActivo}/cobro-efectivo`, {
+    method: 'POST', headers: authHeaders(), body: fd
+  });
+  if (r.ok) {
+    cerrarModal('modal-cobro');
+    showToast('Cobro en efectivo registrado');
+    await cargarDatos();
+  } else {
+    showToast('Error: ' + (await r.json()).detail, true);
+  }
+}
+
+// ── Validar cobro del corredor ────────────────────────────────────────────────
+function abrirValidarCobro(id) {
+  pedidoActivo = id;
+  abrirModal('modal-validar-cobro');
+}
+
+async function confirmarValidarCobro() {
+  const r = await fetch(`/api/pedidos/${pedidoActivo}/validar-cobro`, {
+    method: 'PATCH', headers: authHeaders()
+  });
+  if (r.ok) {
+    cerrarModal('modal-validar-cobro');
+    const d = await r.json();
+    showToast(d.dias_al_cobro != null ? `Cobro validado — ${d.dias_al_cobro} días desde entrega` : 'Cobro validado');
+    await cargarDatos();
+  } else {
+    showToast('Error: ' + (await r.json()).detail, true);
+  }
+}
+
+// ── Factura ───────────────────────────────────────────────────────────────────
+function abrirFactura(id) {
+  pedidoActivo = id;
+  document.getElementById('fac-valor').value = '';
+  document.getElementById('fac-file').value = '';
+  abrirModal('modal-factura');
+}
+
+async function guardarFactura() {
+  const valor = parseFloat(document.getElementById('fac-valor').value);
+  const file  = document.getElementById('fac-file').files[0];
+  if (!valor || valor <= 0) return showToast('Ingresá el valor de la factura', true);
+  if (!file) return showToast('Adjuntá el archivo de la factura', true);
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('valor_factura', valor);
+  const r = await fetch(`/api/pedidos/${pedidoActivo}/factura`, {
+    method: 'POST', headers: authHeaders(), body: fd
+  });
+  if (r.ok) {
+    cerrarModal('modal-factura');
+    showToast('Factura cargada — comisión recalculada');
+    await cargarDatos();
+  } else {
+    showToast('Error: ' + (await r.json()).detail, true);
+  }
+}
+
+// ── Nota de Crédito ───────────────────────────────────────────────────────────
+function abrirNC(id) {
+  pedidoActivo = id;
+  document.getElementById('nc-valor').value = '';
+  document.getElementById('nc-file').value = '';
+  abrirModal('modal-nc');
+}
+
+async function guardarNC() {
+  const valor = parseFloat(document.getElementById('nc-valor').value);
+  const file  = document.getElementById('nc-file').files[0];
+  if (isNaN(valor) || valor < 0) return showToast('Ingresá el valor de la NC', true);
+  if (!file) return showToast('Adjuntá el archivo de la NC', true);
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('valor_nota_credito', valor);
+  const r = await fetch(`/api/pedidos/${pedidoActivo}/nota-credito`, {
+    method: 'POST', headers: authHeaders(), body: fd
+  });
+  if (r.ok) {
+    cerrarModal('modal-nc');
+    showToast('Nota de crédito cargada — comisión recalculada');
+    await cargarDatos();
+  } else {
+    showToast('Error: ' + (await r.json()).detail, true);
+  }
+}
+
+// ── Ver documento ─────────────────────────────────────────────────────────────
+async function verDocAdmin(pedidoId, tipo) {
+  try {
+    const r = await fetch(`/api/pedidos/${pedidoId}/${tipo}/url`, { headers: authHeaders() });
+    if (!r.ok) { showToast('No se pudo obtener el archivo', true); return; }
+    const { url } = await r.json();
+    window.open(url, '_blank');
+  } catch { showToast('Error al abrir el documento', true); }
+}
+
+// ── Comisión ──────────────────────────────────────────────────────────────────
+function abrirComision(id, estadoActual) {
+  pedidoActivo = id;
+  document.getElementById('input-comision-estado').value = estadoActual;
+  document.getElementById('comision-forma').value = 'transferencia';
+  document.getElementById('comision-file').value = '';
+  onComisionEstadoChange();
+  abrirModal('modal-comision');
+}
+
+function onComisionEstadoChange() {
+  const estado = document.getElementById('input-comision-estado').value;
+  document.getElementById('comision-pagada-section').style.display = estado === 'pagada' ? 'block' : 'none';
+}
+
+function onComisionFormaChange() {
+  const forma = document.getElementById('comision-forma').value;
+  document.getElementById('comision-archivo-row').style.display = forma === 'efectivo' ? 'none' : 'block';
+}
+
+async function guardarComision() {
+  const estado = document.getElementById('input-comision-estado').value;
+  const fecha  = document.getElementById('input-fecha-comision').value;
+  const forma  = document.getElementById('comision-forma').value;
+  const file   = document.getElementById('comision-file').files[0];
+
+  if (estado !== 'pagada') {
+    const fd = new FormData();
+    fd.append('comision_estado', estado);
+    const r = await fetch(`/api/pedidos/${pedidoActivo}/comision`, {
+      method: 'PATCH', headers: authHeaders(), body: fd
+    });
+    if (r.ok) { cerrarModal('modal-comision'); showToast('Comisión actualizada'); await cargarDatos(); }
+    else showToast('Error: ' + (await r.json()).detail, true);
+    return;
+  }
+
+  if (!fecha) return showToast('Ingresá la fecha de pago', true);
+
+  if (forma === 'efectivo') {
+    const fd = new FormData();
+    fd.append('comision_fecha_pago', fecha);
+    const r = await fetch(`/api/pedidos/${pedidoActivo}/comision-efectivo`, {
+      method: 'PATCH', headers: authHeaders(), body: fd
+    });
+    if (r.ok) { cerrarModal('modal-comision'); showToast('Comisión pagada en efectivo'); await cargarDatos(); }
+    else showToast('Error: ' + (await r.json()).detail, true);
+  } else {
+    if (!file) return showToast('Adjuntá el comprobante de comisión', true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('comision_fecha_pago', fecha);
+    const r = await fetch(`/api/pedidos/${pedidoActivo}/comprobante-comision`, {
+      method: 'POST', headers: authHeaders(), body: fd
+    });
+    if (r.ok) { cerrarModal('modal-comision'); showToast('Comprobante de comisión cargado'); await cargarDatos(); }
+    else showToast('Error: ' + (await r.json()).detail, true);
+  }
+}
+
+// ── Corredores ────────────────────────────────────────────────────────────────
+let seccionCorredoresAbierta = false;
+
+function toggleSeccionCorredores() {
+  seccionCorredoresAbierta = !seccionCorredoresAbierta;
+  const sec = document.getElementById('seccion-corredores');
+  const btn = document.getElementById('btn-toggle-corredores');
+  sec.style.display = seccionCorredoresAbierta ? 'block' : 'none';
+  btn.textContent = seccionCorredoresAbierta ? 'Corredores ▴' : 'Corredores ▾';
+  if (seccionCorredoresAbierta) renderCorredores();
+}
+
+async function renderCorredores() {
+  const lista = document.getElementById('corredores-lista');
+  lista.innerHTML = '<span style="color:var(--warm-grey);">Cargando...</span>';
+  try {
+    const r = await fetch('/api/corredores', { headers: authHeaders() });
+    if (!r.ok) { lista.innerHTML = '<span style="color:var(--rose);">Error al cargar corredores</span>'; return; }
+    const corredores = await r.json();
+    if (!corredores.length) {
+      lista.innerHTML = '<span style="color:var(--warm-grey);">No hay corredores cargados. Agregá el primero.</span>';
+      return;
+    }
+    lista.innerHTML = `
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:8px 12px; border-bottom:2px solid var(--border); font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--warm-grey);">Nombre</th>
+            <th style="text-align:left; padding:8px 12px; border-bottom:2px solid var(--border); font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--warm-grey);">Email</th>
+            <th style="text-align:right; padding:8px 12px; border-bottom:2px solid var(--border); font-size:10px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:var(--warm-grey);">Comisión</th>
+            <th style="padding:8px 12px; border-bottom:2px solid var(--border);"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${corredores.map(c => `
+            <tr>
+              <td style="padding:10px 12px; border-bottom:1px solid var(--chalk);">${c.nombre}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid var(--chalk); color:var(--warm-grey);">${c.email}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid var(--chalk); text-align:right;">${c.porcentaje_comision}%</td>
+              <td style="padding:10px 12px; border-bottom:1px solid var(--chalk); text-align:right;">
+                <button class="act-btn danger" onclick="desactivarCorredor('${c.id}', '${c.nombre}')">Desactivar</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch { lista.innerHTML = '<span style="color:var(--rose);">Error de conexión</span>'; }
+}
+
+function abrirNuevoCorredor() {
+  document.getElementById('corr-nombre').value = '';
+  document.getElementById('corr-email').value = '';
+  document.getElementById('corr-comision').value = '7';
+  abrirModal('modal-corredor');
+}
+
+async function guardarCorredor() {
+  const nombre    = document.getElementById('corr-nombre').value.trim();
+  const email     = document.getElementById('corr-email').value.trim();
+  const comision  = document.getElementById('corr-comision').value;
+  if (!nombre) return showToast('Ingresá el nombre del corredor', true);
+  if (!email)  return showToast('Ingresá el email del corredor', true);
+  const fd = new FormData();
+  fd.append('nombre', nombre);
+  fd.append('email', email);
+  fd.append('porcentaje_comision', comision);
+  const r = await fetch('/api/corredores', { method: 'POST', headers: authHeaders(), body: fd });
+  if (r.ok) {
+    cerrarModal('modal-corredor');
+    showToast(`Corredor "${nombre}" creado`);
+    renderCorredores();
+    await cargarDatos();  // recarga filtro de corredores en la tabla
+  } else {
+    const e = await r.json();
+    showToast('Error: ' + e.detail, true);
+  }
+}
+
+async function desactivarCorredor(id, nombre) {
+  if (!confirm(`¿Desactivar al corredor "${nombre}"? No aparecerá más en la lista ni en pedidos nuevos.`)) return;
+  const r = await fetch(`/api/corredores/${id}`, { method: 'DELETE', headers: authHeaders() });
+  if (r.ok) { showToast(`Corredor "${nombre}" desactivado`); renderCorredores(); await cargarDatos(); }
+  else showToast('Error al desactivar', true);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#C0392B' : '#1A1714';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function formatPeso(n) {
+  return '$' + parseFloat(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function formatFecha(s) {
+  if (!s) return '—';
+  const [y, m, d] = s.split('T')[0].split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// Cerrar modales con click en backdrop
+document.querySelectorAll('.modal-backdrop').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Facundo Radicich · Portfolio</title>
+<meta name="description" content="AI and data automation projects by Facundo Radicich: ERP integrations, LLM-powered apps, analytics and machine learning.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #eef2f3; --surface: #ffffff; --ink: #15212a; --ink-2: #4b5a66; --ink-3: #7d8b96;
+    --line: #d9e1e5; --accent: #1f6f8b; --accent-soft: #dcebf1; --tag: #e7ecef;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0f171d; --surface: #17222a; --ink: #e6eef2; --ink-2: #a9b8c2; --ink-3: #7b8c98;
+      --line: #26343e; --accent: #5fb3d1; --accent-soft: #1b3441; --tag: #222f38; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body); }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 56px 72px; }
+  .eyebrow { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+  h1 { font-family: var(--display); font-size: clamp(34px, 6vw, 56px); line-height: 1; margin: 0; letter-spacing: -.01em; }
+  .role { font-family: var(--display); font-size: clamp(18px, 2.4vw, 24px); color: var(--accent); margin: 10px 0 0; font-weight: 600; }
+  .intro { max-width: 66ch; color: var(--ink-2); margin: 20px 0 0; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .btn { font: 600 14px var(--body); text-decoration: none; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .btn:hover { border-color: var(--accent); }
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 44px 0 0; }
+  .fact { background: var(--surface); padding: 16px 18px; }
+  .fact b { display: block; font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 13.5px; color: var(--ink-2); }
+  h2 { font-family: var(--display); font-size: 26px; margin: 56px 0 6px; }
+  .section-sub { color: var(--ink-2); margin: 0 0 20px; }
+  .projects { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .card.feature { grid-column: 1 / -1; }
+  .card .kind { font: 500 11.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .card h3 { font-family: var(--display); font-size: 20px; margin: 0; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 15px; }
+  .card ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14.5px; }
+  .card li { margin-bottom: 3px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; }
+  .tags span { font: 500 12px var(--mono); background: var(--tag); color: var(--ink-2); padding: 3px 8px; border-radius: 5px; }
+  .card .actions { display: flex; gap: 16px; font-weight: 600; font-size: 14px; }
+  .card .actions a { text-decoration: none; }
+  .card .actions a:hover { text-decoration: underline; }
+  .card img { width: 100%; max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+  .timeline { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+  .step { position: relative; padding: 0 0 22px 22px; }
+  .step::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+  .step .when { font: 500 12.5px var(--mono); color: var(--ink-3); }
+  .step h4 { margin: 2px 0 2px; font-size: 16px; }
+  .step p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 70ch; }
+  footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  @media (max-width: 760px) { .projects { grid-template-columns: 1fr; } .facts { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Portfolio</p>
+    <h1>Facundo Radicich</h1>
+    <p class="role">AI &amp; Data Automation · Python · SQL · LLMs · ERP integrations</p>
+    <p class="intro">I founded and ran OH My Chalk!, a paint brand sold through a B2B network across Argentina. I led its sales and marketing teams, moved the company from a CRM to an ERP, and in 2026 built the data and automation systems it runs on. These projects are the tools I built along the way, published with anonymized or synthetic data.</p>
+    <div class="links">
+      <a class="btn primary" href="Facundo_Radicich_CV_EN.pdf">Resume (EN)</a>
+      <a class="btn" href="Facundo_Radicich_CV_ES.pdf">CV (ES)</a>
+      <a class="btn" href="https://www.linkedin.com/in/facundoradicich-8b1931130">LinkedIn</a>
+      <a class="btn" href="https://github.com/FacundoRadicich/portfolio">Source code</a>
+    </div>
+  </header>
+
+  <section class="facts" aria-label="Highlights">
+    <div class="fact"><b>+88%</b><span>half-over-half sales growth tracked with the ERP analytics</span></div>
+    <div class="fact"><b>10</b><span>sales brokers on the order and commission app</span></div>
+    <div class="fact"><b>132</b><span>bills of materials in the production plan</span></div>
+    <div class="fact"><b>2,563</b><span>CRM deals analyzed for sales effort</span></div>
+  </section>
+
+  <h2>Projects</h2>
+  <p class="section-sub">Built for real use at the company unless noted. Each folder has its own README.</p>
+  <div class="projects">
+
+    <article class="card feature">
+      <span class="kind">Analytics · live demo</span>
+      <h3>B2B Sales Intelligence</h3>
+      <p>Replica of the dashboard I run on top of the ERP: revenue by broker, region and product, repurchase tracking per customer, and a lead-scoring model whose weights you can move to re-rank 180 dormant accounts.</p>
+      <div class="actions"><a href="sales-intelligence.html">Open the demo →</a><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/sales-intelligence-demo">Code</a></div>
+      <div class="tags"><span>JavaScript</span><span>SVG charts</span><span>lead scoring</span><span>synthetic data</span></div>
+    </article>
+
+    <article class="card">
+      <span class="kind">AI · web app · in production</span>
+      <h3>LLM Order Intake</h3>
+      <p>Turns wholesale orders (Excel, PDF or a photo of a handwritten note) into priced orders and ERP import files. Tracks delivery, invoices, payments and broker commissions.</p>
+      <ul><li>Claude API (vision) reads handwritten orders</li><li>Role-based access for admin and 10 brokers</li><li>Rate limiting, signed URLs for private files</li></ul>
+      <div class="actions"><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/order-intake-api">Code</a></div>
+      <div class="tags"><span>FastAPI</span><span>Claude API</span><span>Supabase</span><span>Render</span></div>
+    </article>
+
+    <article class="card">
+      <span class="kind">Automation · ERP</span>
+      <h3>Odoo ERP Automation</h3>
+      <p>Business rules for loading orders into Odoo (customer matching by tax ID, pricelists, VAT rules, price drift), a stock-out simulation to rank production, and weekly account statements emailed to each broker.</p>
+      <div class="actions"><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/odoo-automation">Code</a></div>
+      <div class="tags"><span>Python</span><span>XML-RPC</span><span>Odoo 19</span><span>unit tests</span></div>
+    </article>
+
+    <article class="card">
+      <span class="kind">Data analysis</span>
+      <h3>Where does the sales effort go?</h3>
+      <p>2,563 CRM deals show that strategic accounts bring 20% of revenue with only 6% of the team's activities. Originally a Power BI report, rebuilt in Python.</p>
+      <img src="img/effort_vs_revenue.png" alt="Bar chart comparing revenue share and sales-activity share by account tier" loading="lazy">
+      <div class="actions"><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/crm-sales-effort">Notebook</a></div>
+      <div class="tags"><span>pandas</span><span>matplotlib</span><span>Power BI</span></div>
+    </article>
+
+    <article class="card">
+      <span class="kind">Machine learning</span>
+      <h3>Customer Churn Model</h3>
+      <p>Coursework rebuilt properly: five models compared with cross-validation and ROC-AUC, permutation importance checked against known drivers, and a decision threshold chosen from a business cost.</p>
+      <img src="img/roc.png" alt="ROC curves of four churn models on the test set" loading="lazy">
+      <div class="actions"><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/churn-model">Notebook</a></div>
+      <div class="tags"><span>scikit-learn</span><span>gradient boosting</span><span>MLP</span></div>
+    </article>
+
+    <article class="card">
+      <span class="kind">Full-stack web app</span>
+      <h3>Workshop Marketplace</h3>
+      <p>Connects the brand's community with teachers who run painting workshops: teacher portal, student accounts, a map of ~550 points of sale and a self-validation flow for stores.</p>
+      <div class="actions"><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/workshop-marketplace">Code</a></div>
+      <div class="tags"><span>Next.js 16</span><span>TypeScript</span><span>Prisma</span><span>Postgres</span><span>Leaflet</span></div>
+    </article>
+
+    <article class="card">
+      <span class="kind">Data extraction · side project</span>
+      <h3>Expense Tracker</h3>
+      <p>Upload credit-card statements as PDFs and get every transaction extracted, categorized and charted. Parsers for six Argentine banks and wallets, with automatic bank detection.</p>
+      <div class="actions"><a href="https://github.com/FacundoRadicich/portfolio/tree/main/projects/expense-tracker">Code</a></div>
+      <div class="tags"><span>Streamlit</span><span>pdfplumber</span><span>Plotly</span><span>Supabase</span></div>
+    </article>
+  </div>
+
+  <h2>How I got here</h2>
+  <p class="section-sub">Each stage added a layer of data to the business.</p>
+  <div class="timeline">
+    <div class="step"><span class="when">2014 – 2021</span><h4>Business Administration and Actuarial Science, University of Buenos Aires</h4><p>Business degree plus actuarial coursework in advanced mathematics, probability and statistics.</p></div>
+    <div class="step"><span class="when">2017</span><h4>Founded OH My Chalk!</h4><p>Built the brand and its B2B distribution network. Led the marketing team (up to 10 people) and the sales team.</p></div>
+    <div class="step"><span class="when">2018 – 2024</span><h4>Sales on a CRM</h4><p>Set up Pipedrive to track customers and deals across the sales team, then analyzed where the team's effort went.</p></div>
+    <div class="step"><span class="when">2023 – 2024</span><h4>Data Science &amp; Analytics, Coderhouse</h4><p>Python, statistics, machine learning and Power BI.</p></div>
+    <div class="step"><span class="when">2024 – today</span><h4>ERP and automation</h4><p>Moved sales, customers, accounting and production to Odoo, then automated order intake, broker follow-up and customer management on top of it.</p></div>
+  </div>
+
+  <footer>
+    <span>facundoradicich@gmail.com</span>
+    <span>Buenos Aires, Argentina · open to remote</span>
+    <span>Data in these projects is anonymized or synthetic.</span>
+  </footer>
+</main>
+</body>
+</html>

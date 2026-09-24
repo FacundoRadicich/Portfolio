@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OH MY CHALK — Carga de Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #F7F3EE; --chalk: #EDE8E0; --ink: #1A1714;
+    --rose: #C97B6E; --rose-light: #E8B4AC; --sage: #8A9E8C;
+    --warm-grey: #9E9590; --border: #D8D0C7;
+  }
+  html { background: var(--ink); }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* LOGIN */
+  #login-screen { position: fixed; inset: 0; background: var(--ink); display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s ease; }
+  #login-screen.hidden { opacity: 0; pointer-events: none; }
+  .login-box { background: var(--cream); padding: 56px 48px; width: 100%; max-width: 420px; position: relative; }
+  .login-box::before { content: ''; position: absolute; top: 8px; left: 8px; right: -8px; bottom: -8px; border: 1px solid var(--rose); pointer-events: none; }
+  .login-brand { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--rose); margin-bottom: 8px; }
+  .login-title { font-family: 'Playfair Display', serif; font-size: 32px; line-height: 1.1; color: var(--ink); margin-bottom: 36px; }
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 8px; }
+  .field input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--ink); outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: var(--rose); }
+  .login-error { color: var(--rose); font-size: 13px; margin-bottom: 16px; display: none; }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; padding: 14px; background: var(--ink); color: var(--cream); border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn-primary:hover { background: var(--rose); }
+  .btn-primary:disabled { background: var(--warm-grey); cursor: not-allowed; }
+  .btn-secondary { padding: 10px 20px; background: transparent; color: var(--ink); border: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+  .btn-secondary:hover { border-color: var(--ink); }
+  .btn-confirm { padding: 12px 28px; background: var(--sage); color: white; border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn-confirm:hover { background: #6b8a6d; }
+
+  /* MAIN APP */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  #app.visible { display: flex; }
+  header { background: var(--ink); color: var(--cream); padding: 20px 48px; display: flex; align-items: center; justify-content: space-between; }
+  .header-brand { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: var(--rose-light); }
+  .header-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--cream); }
+  .header-nav { display: flex; gap: 24px; align-items: center; }
+  .header-link { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); text-decoration: none; transition: color 0.2s; }
+  .header-link:hover { color: var(--rose-light); }
+  .header-logout { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); cursor: pointer; border: none; background: none; font-family: 'DM Sans', sans-serif; transition: color 0.2s; }
+  .header-logout:hover { color: var(--rose-light); }
+
+  main { flex: 1; padding: 56px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .card { background: white; padding: 36px; border: 1px solid var(--border); }
+  .card-label { font-size: 10px; font-weight: 500; letter-spacing: 0.25em; text-transform: uppercase; color: var(--rose); margin-bottom: 8px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 24px; color: var(--ink); }
+
+  /* UPLOAD */
+  .upload-zone { border: 2px dashed var(--border); padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 24px; position: relative; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--rose); background: #FDF8F6; }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 32px; margin-bottom: 12px; }
+  .upload-text { font-size: 14px; color: var(--warm-grey); line-height: 1.5; }
+  .upload-text strong { color: var(--ink); }
+  .upload-filename { margin-top: 12px; font-size: 13px; color: var(--sage); font-weight: 500; display: none; }
+
+  /* FORM */
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 8px; }
+  .form-input { width: 100%; padding: 11px 14px; border: 1px solid var(--border); background: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: var(--rose); background: white; }
+  .form-select { width: 100%; padding: 11px 14px; border: 1px solid var(--border); background: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); outline: none; appearance: none; cursor: pointer; }
+  .form-select:focus { border-color: var(--rose); }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* TOGGLE */
+  .toggle-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .toggle { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--sage); }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.2s; }
+  .toggle.on::after { transform: translateX(20px); }
+  .toggle-label { font-size: 13px; color: var(--ink); }
+
+  /* STATUS */
+  .status-msg { margin-top: 20px; padding: 14px 18px; font-size: 13px; border-left: 3px solid; display: none; line-height: 1.5; }
+  .status-msg.error { border-color: var(--rose); background: #FDF0EE; color: #8B3B30; }
+  .status-msg.success { border-color: var(--sage); background: #F0F5F0; color: #3B5C3D; }
+  .status-msg.loading { border-color: var(--warm-grey); background: var(--chalk); color: var(--ink); }
+
+  /* CATALOG */
+  .catalog-status { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--chalk); margin-bottom: 24px; font-size: 13px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.ok { background: var(--sage); }
+  .status-dot.error { background: var(--rose); }
+
+  /* PREVIEW */
+  #preview-section { display: none; margin-top: 28px; }
+  .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .preview-title { font-family: 'Playfair Display', serif; font-size: 18px; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .preview-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warm-grey); }
+  .preview-table td { padding: 8px 12px; border-bottom: 1px solid var(--chalk); }
+  .preview-table tr:last-child td { border-bottom: none; }
+  .preview-actions { display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end; }
+
+  .divider { grid-column: 1 / -1; border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--cream); border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+  .spinner-dark { border-color: var(--ink); border-top-color: transparent; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; padding: 32px 24px; }
+    header { padding: 16px 24px; }
+    .login-box { padding: 40px 28px; margin: 16px; }
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-brand">Oh My Chalk</div>
+    <h1 class="login-title">Gestión de<br>Pedidos</h1>
+    <div class="login-error" id="login-error">Email o contraseña incorrectos</div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" autocomplete="username" placeholder="admin@omc.com">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <span class="header-brand">Oh My Chalk</span>
+    <span class="header-title">Carga de Pedidos</span>
+    <div class="header-nav">
+      <a href="/admin" class="header-link">Panel Admin</a>
+      <button class="header-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- CATÁLOGO -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-label">Configuración</div>
+      <div class="card-title">Catálogo de Productos</div>
+      <div class="catalog-status">
+        <span class="status-dot error" id="catalog-dot"></span>
+        <span id="catalog-text">No hay catálogo cargado</span>
+      </div>
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <div class="upload-zone" style="flex:1; min-width:200px; margin-bottom:0; padding:20px;">
+          <input type="file" accept=".xlsx,.xls" onchange="uploadCatalog(this)">
+          <div class="upload-text"><strong>Subir nuevo catálogo</strong><br>Archivo Excel de productos</div>
+        </div>
+      </div>
+      <div class="status-msg" id="catalog-msg"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NUEVO PEDIDO -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-label">Procesar</div>
+      <div class="card-title">Nuevo Pedido</div>
+
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="pedido-file" accept=".xlsx,.xls,.jpg,.jpeg,.png,.webp"
+               onchange="onFileSelect(this)">
+        <div class="upload-icon">📋</div>
+        <div class="upload-text">
+          <strong>Arrastrá o hacé clic para subir</strong><br>
+          Excel (.xlsx) o foto del pedido (.jpg, .png)
+        </div>
+        <div class="upload-filename" id="upload-filename"></div>
+      </div>
+
+      <div class="form-grid-2" style="margin-bottom:20px;">
+        <div class="form-group">
+          <label class="form-label">Nombre del cliente</label>
+          <input type="text" class="form-input" id="cliente-input" placeholder="Ej: ARTÍSTICA EJEMPLO">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Corredor</label>
+          <select class="form-select" id="corredor-select">
+            <option value="">— Cargando corredores —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid-3" style="margin-bottom:24px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Descuento del cliente (%)</label>
+          <input type="number" class="form-input" id="descuento-input" placeholder="0" min="0" max="100" step="0.5" value="0">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Fecha de entrega estimada</label>
+          <input type="date" class="form-input" id="fecha-input">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">IVA</label>
+          <div class="toggle-row" style="margin-top:4px; margin-bottom:0;">
+            <div class="toggle" id="iva-toggle" onclick="toggleIva()"></div>
+            <span class="toggle-label" id="iva-label">Sin IVA</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-procesar" onclick="procesarPedido()">
+        Procesar pedido
+      </button>
+
+      <!-- PREVIEW DE ITEMS (paso 2) -->
+      <div id="preview-section">
+        <div class="preview-header">
+          <div class="preview-title" id="preview-title">Vista previa</div>
+          <span id="preview-badge" style="font-size:12px; color:var(--warm-grey);"></span>
+        </div>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th style="text-align:right;">Precio unit.</th>
+              <th style="text-align:center;">Cant.</th>
+            </tr>
+          </thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+
+        <div id="preview-totales" style="margin-top:20px; border-top:1px solid var(--border); padding-top:16px;">
+          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;">
+            <span style="color:var(--warm-grey);">Subtotal (precio × cantidad)</span>
+            <span id="prev-subtotal" style="font-weight:500;">—</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;" id="prev-descuento-row">
+            <span style="color:var(--warm-grey);">Descuento <span id="prev-desc-pct"></span></span>
+            <span id="prev-descuento" style="color:var(--rose);">—</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:15px; padding-top:8px; border-top:1px dashed var(--border);">
+            <span style="font-weight:500;">Valor sin IVA <small style="color:var(--warm-grey); font-weight:400;">(base comisión)</small></span>
+            <span style="display:flex; align-items:center; gap:6px;">
+              <span style="color:var(--warm-grey);">$</span>
+              <input type="number" id="prev-total" class="form-input" style="width:140px; text-align:right; padding:8px 10px;" min="0" step="0.01" oninput="recalcConIva()">
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; margin-top:8px;">
+            <span style="color:var(--warm-grey);">Valor con IVA (21%)</span>
+            <span id="prev-con-iva" style="font-weight:500;">—</span>
+          </div>
+          <div id="prev-comision-nota" style="display:flex; justify-content:space-between; font-size:13px; margin-top:8px; color:var(--sage);">
+            <span>Comisión estimada (7% sobre sin IVA)</span>
+            <span id="prev-comision">—</span>
+          </div>
+          <div id="prev-sin-precio" style="font-size:12px; color:var(--rose); margin-top:8px; display:none;"></div>
+        </div>
+
+        <div class="preview-actions">
+          <button class="btn-secondary" onclick="cancelarPreview()">Cancelar</button>
+          <button class="btn-confirm" id="btn-confirmar" onclick="confirmarPedido()">
+            Confirmar y descargar Odoo
+          </button>
+        </div>
+      </div>
+
+      <div class="status-msg" id="pedido-msg"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Supabase init ─────────────────────────────────────────────────────────────
+let sb = null;
+let SESSION = null;
+let currentDraftId = null;
+let ivaOn = false;
+
+async function initSupabase() {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.supabase_enabled) {
+      const { createClient } = window.supabase;
+      sb = createClient(cfg.supabase_url, cfg.supabase_anon_key);
+      // Restaurar sesión existente
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        SESSION = session;
+        onLoggedIn();
+      }
+    }
+  } catch (e) {
+    console.error('Error init Supabase:', e);
+  }
+}
+
+function authHeaders() {
+  if (SESSION?.access_token) {
+    return { 'Authorization': `Bearer ${SESSION.access_token}` };
+  }
+  return {};
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) return;
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.textContent = 'Ingresando...';
+
+  try {
+    if (sb) {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      SESSION = data.session;
+      onLoggedIn();
+    } else {
+      // Fallback legacy (sin Supabase)
+      const r = await fetch('/api/status', {
+        headers: { 'Authorization': 'Basic ' + btoa(`admin:${pass}`) }
+      });
+      if (r.status === 401) throw new Error('Credenciales incorrectas');
+      SESSION = { access_token: null, _legacy: true, _user: email, _pass: pass };
+      onLoggedIn();
+    }
+  } catch (e) {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-error').textContent = e.message || 'Error al ingresar';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ingresar';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+  document.getElementById('login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+async function onLoggedIn() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  await loadStatus();
+  await loadCorredores();
+}
+
+function logout() {
+  if (sb) sb.auth.signOut();
+  SESSION = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+// ── Catálogo ──────────────────────────────────────────────────────────────────
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/status', { headers: authHeaders() });
+    if (r.ok) updateCatalogStatus(await r.json());
+  } catch {}
+}
+
+function updateCatalogStatus(data) {
+  const dot = document.getElementById('catalog-dot');
+  const txt = document.getElementById('catalog-text');
+  if (data.catalogo_cargado) {
+    dot.className = 'status-dot ok';
+    txt.textContent = `Catálogo cargado — ${data.productos} productos`;
+  } else {
+    dot.className = 'status-dot error';
+    txt.textContent = 'No hay catálogo cargado';
+  }
+}
+
+async function uploadCatalog(input) {
+  const file = input.files[0];
+  if (!file) return;
+  showMsg('catalog-msg', 'loading', '<span class="spinner spinner-dark"></span>Subiendo catálogo...');
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/catalogo', { method: 'POST', headers: authHeaders(), body: fd });
+    const data = await r.json();
+    if (r.ok) {
+      showMsg('catalog-msg', 'success', `✓ Catálogo actualizado — ${data.productos} productos`);
+      updateCatalogStatus(data);
+    } else {
+      showMsg('catalog-msg', 'error', `Error: ${data.detail}`);
+    }
+  } catch {
+    showMsg('catalog-msg', 'error', 'Error al subir el catálogo');
+  }
+}
+
+// ── Corredores ────────────────────────────────────────────────────────────────
+async function loadCorredores() {
+  try {
+    const r = await fetch('/api/corredores', { headers: authHeaders() });
+    if (!r.ok) return;
+    const corredores = await r.json();
+    const sel = document.getElementById('corredor-select');
+    sel.innerHTML = '<option value="">— Seleccioná un corredor —</option>'
+                  + '<option value="__none__">Sin corredor</option>';
+    corredores.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.nombre;
+      sel.appendChild(opt);
+    });
+  } catch {}
+}
+
+// ── File upload ───────────────────────────────────────────────────────────────
+function onFileSelect(input) {
+  const file = input.files[0];
+  const fn = document.getElementById('upload-filename');
+  if (file) {
+    fn.textContent = `📎 ${file.name}`;
+    fn.style.display = 'block';
+    document.querySelector('.upload-icon').textContent =
+      file.name.match(/\.(jpg|jpeg|png|webp)$/i) ? '🖼️' : '📊';
+  }
+}
+
+// ── IVA toggle ────────────────────────────────────────────────────────────────
+function toggleIva() {
+  ivaOn = !ivaOn;
+  document.getElementById('iva-toggle').classList.toggle('on', ivaOn);
+  document.getElementById('iva-label').textContent = ivaOn ? 'Con IVA VENTAS' : 'Sin IVA';
+}
+
+// ── Procesar (paso 1) ─────────────────────────────────────────────────────────
+async function procesarPedido() {
+  const fileInput  = document.getElementById('pedido-file');
+  const cliente    = document.getElementById('cliente-input').value.trim();
+  const corredor   = document.getElementById('corredor-select').value;
+  const descuento  = document.getElementById('descuento-input').value || '0';
+  const fecha      = document.getElementById('fecha-input').value;
+
+  if (!fileInput.files[0]) return showMsg('pedido-msg', 'error', 'Seleccioná un archivo de pedido');
+  if (!cliente)            return showMsg('pedido-msg', 'error', 'Ingresá el nombre del cliente');
+  if (!fecha)              return showMsg('pedido-msg', 'error', 'Ingresá la fecha de entrega estimada');
+
+  const btn = document.getElementById('btn-procesar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Procesando...';
+  showMsg('pedido-msg', 'loading', '<span class="spinner spinner-dark"></span>Procesando el pedido con IA...');
+  document.getElementById('preview-section').style.display = 'none';
+
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  fd.append('cliente', cliente);
+  fd.append('con_iva', ivaOn);
+  fd.append('corredor_id', corredor === '__none__' ? '' : corredor);
+  fd.append('descuento', descuento);
+  fd.append('fecha_entrega_estimada', fecha);
+
+  try {
+    const r = await fetch('/api/procesar', { method: 'POST', headers: authHeaders(), body: fd });
+    const data = await r.json();
+    if (!r.ok) return showMsg('pedido-msg', 'error', `Error: ${fmtErr(data.detail)}`);
+
+    currentDraftId = data.draft_id;
+    showPreview(data);
+    showMsg('pedido-msg', 'success', `✓ ${data.total_items} líneas detectadas. Revisá y confirmá.`);
+  } catch {
+    showMsg('pedido-msg', 'error', 'Error al procesar el pedido. Revisá la conexión.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Procesar pedido';
+  }
+}
+
+function showPreview(data) {
+  document.getElementById('preview-title').textContent = `Vista previa — ${data.cliente}`;
+  document.getElementById('preview-badge').textContent = `${data.total_items} productos`;
+  const body = document.getElementById('preview-body');
+  body.innerHTML = '';
+  data.items.forEach(item => {
+    const tr = document.createElement('tr');
+    const precio = (item.precio !== '' && item.precio != null) ? `$${parseFloat(item.precio).toLocaleString('es-AR')}` : '—';
+    tr.innerHTML = `<td>${item.nombre}</td><td style="text-align:right;">${precio}</td><td style="text-align:center;">${item.cantidad}</td>`;
+    body.appendChild(tr);
+  });
+
+  // Totales calculados automáticamente
+  const fmt = n => '$' + parseFloat(n || 0).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:0});
+  document.getElementById('prev-subtotal').textContent = fmt(data.subtotal);
+  const descRow = document.getElementById('prev-descuento-row');
+  if (data.descuento > 0) {
+    const montoDesc = data.subtotal - data.valor_sin_iva;
+    document.getElementById('prev-desc-pct').textContent = `(${data.descuento}%)`;
+    document.getElementById('prev-descuento').textContent = '− ' + fmt(montoDesc);
+    descRow.style.display = 'flex';
+  } else {
+    descRow.style.display = 'none';
+  }
+  document.getElementById('prev-total').value = data.valor_sin_iva;
+  recalcConIva();  // calcula con IVA + comisión a partir del sin IVA
+
+  const sinPrecio = document.getElementById('prev-sin-precio');
+  if (data.sin_precio > 0) {
+    sinPrecio.textContent = `⚠ ${data.sin_precio} producto(s) sin precio en el catálogo — no suman al total. Revisá el valor.`;
+    sinPrecio.style.display = 'block';
+  } else {
+    sinPrecio.style.display = 'none';
+  }
+
+  document.getElementById('preview-section').style.display = 'block';
+}
+
+// Recalcula valor con IVA y comisión cada vez que se edita el valor sin IVA
+function recalcConIva() {
+  const fmt = n => '$' + parseFloat(n || 0).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:0});
+  const sinIva = parseFloat(document.getElementById('prev-total').value) || 0;
+  document.getElementById('prev-con-iva').textContent = fmt(sinIva * 1.21);
+
+  // Comisión: solo si hay corredor seleccionado (no "sin corredor")
+  const corredor = document.getElementById('corredor-select').value;
+  const comisionRow = document.getElementById('prev-comision-nota');
+  if (corredor && corredor !== '__none__') {
+    document.getElementById('prev-comision').textContent = fmt(sinIva * 0.07);
+    comisionRow.style.display = 'flex';
+  } else {
+    comisionRow.style.display = 'none';
+  }
+}
+
+function cancelarPreview() {
+  currentDraftId = null;
+  document.getElementById('preview-section').style.display = 'none';
+  showMsg('pedido-msg', 'loading', 'Pedido cancelado');
+  setTimeout(() => document.getElementById('pedido-msg').style.display = 'none', 2000);
+}
+
+// ── Confirmar (paso 2) ────────────────────────────────────────────────────────
+async function confirmarPedido() {
+  if (!currentDraftId) return;
+  const btn = document.getElementById('btn-confirmar');
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+
+  const fd = new FormData();
+  fd.append('draft_id', currentDraftId);
+  const totalEditado = document.getElementById('prev-total').value;
+  if (totalEditado) fd.append('valor_estimado', totalEditado);
+
+  try {
+    const r = await fetch('/api/confirmar', { method: 'POST', headers: authHeaders(), body: fd });
+    if (!r.ok) {
+      const err = await r.json();
+      return showMsg('pedido-msg', 'error', `Error: ${fmtErr(err.detail)}`);
+    }
+    // Descarga automática
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const cd = r.headers.get('Content-Disposition') || '';
+    const match = cd.match(/filename=(.+)/);
+    a.href = url;
+    a.download = match ? match[1] : 'pedido.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    currentDraftId = null;
+    document.getElementById('preview-section').style.display = 'none';
+    showMsg('pedido-msg', 'success', '✓ Pedido registrado y archivo descargado correctamente');
+    resetForm();
+  } catch {
+    showMsg('pedido-msg', 'error', 'Error al confirmar. Intentá de nuevo.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar y descargar Odoo';
+  }
+}
+
+function resetForm() {
+  document.getElementById('pedido-file').value = '';
+  document.getElementById('cliente-input').value = '';
+  document.getElementById('descuento-input').value = '0';
+  document.getElementById('fecha-input').value = '';
+  document.getElementById('corredor-select').value = '';
+  document.getElementById('upload-filename').style.display = 'none';
+  document.querySelector('.upload-icon').textContent = '📋';
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showMsg(id, type, html) {
+  const el = document.getElementById(id);
+  el.className = `status-msg ${type}`;
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+// Normaliza el detail de errores (FastAPI devuelve objetos/arrays en validaciones)
+function fmtErr(detail) {
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) return detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+  if (detail && typeof detail === 'object') return detail.msg || JSON.stringify(detail);
+  return 'Error desconocido';
+}
+</script>
+</body>
+</html>

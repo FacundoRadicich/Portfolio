@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Oh My Chalk! brand palette */
+  --color-omc-green:       #00BBAD;
+  --color-omc-green-dark:  #009e92;
+  --color-omc-fuchsia:     #e80c87;
+  --color-omc-fuchsia-dark:#c40a72;
+  --color-omc-black:       #111111;
+  --color-omc-gray:        #F5F5F5;
+  --color-omc-white:       #FFFFFF;
+  --color-omc-border:      #E0E0E0;
+  --color-omc-text:        #333333;
+  --color-omc-text-muted:  #777777;
+
+  /* Tier dot colors */
+  --color-tier-embajadora:  #e80c87;
+  --color-tier-instructora: #00BBAD;
+  --color-tier-colaboradora:#111111;
+
+  /* Typography */
+  --font-display: var(--font-lato), system-ui, sans-serif;
+  --font-sans:    var(--font-lato), system-ui, sans-serif;
+
+  --color-background: var(--color-omc-white);
+  --color-foreground: var(--color-omc-black);
+}
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #111111;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+
+html { scroll-behavior: smooth; }
+
+/* Alternating section backgrounds */
+.section-gray  { background-color: #F5F5F5; }
+.section-white { background-color: #FFFFFF; }

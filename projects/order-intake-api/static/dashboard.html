@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OH MY CHALK — Mi Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #F7F3EE; --chalk: #EDE8E0; --ink: #1A1714;
+    --rose: #C97B6E; --rose-light: #E8B4AC; --sage: #8A9E8C;
+    --warm-grey: #9E9590; --border: #D8D0C7;
+    --red: #C0392B; --red-bg: #FDF0EE;
+    --yellow: #E67E22; --yellow-bg: #FEF9F0;
+    --green: #27AE60; --green-bg: #F0F5F0;
+  }
+  html { background: var(--ink); }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* LOGIN */
+  #login-screen { position: fixed; inset: 0; background: var(--ink); display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+  #login-screen.hidden { opacity: 0; pointer-events: none; }
+  .login-box { background: var(--cream); padding: 56px 48px; width: 100%; max-width: 420px; position: relative; }
+  .login-box::before { content: ''; position: absolute; top: 8px; left: 8px; right: -8px; bottom: -8px; border: 1px solid var(--rose); pointer-events: none; }
+  .login-brand { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--rose); margin-bottom: 8px; }
+  .login-title { font-family: 'Playfair Display', serif; font-size: 32px; line-height: 1.1; color: var(--ink); margin-bottom: 36px; }
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 8px; }
+  .field input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--ink); outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: var(--rose); }
+  .login-error { color: var(--rose); font-size: 13px; margin-bottom: 16px; display: none; }
+  .btn-primary { width: 100%; padding: 14px; background: var(--ink); color: var(--cream); border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn-primary:hover { background: var(--rose); }
+  .btn-primary:disabled { background: var(--warm-grey); cursor: not-allowed; }
+
+  /* APP */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  #app.visible { display: flex; }
+  header { background: var(--ink); color: var(--cream); padding: 20px 48px; display: flex; align-items: center; justify-content: space-between; }
+  .header-brand { font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: var(--rose-light); }
+  .header-info { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .header-name { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--cream); }
+  .header-logout { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); cursor: pointer; border: none; background: none; font-family: 'DM Sans', sans-serif; transition: color 0.2s; }
+  .header-logout:hover { color: var(--rose-light); }
+
+  /* SUMMARY CARDS */
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 32px 48px 0; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .summary-card { background: white; border: 1px solid var(--border); padding: 24px; }
+  .summary-label { font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 8px; }
+  .summary-value { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--ink); }
+  .summary-value.alert-red { color: var(--red); }
+  .summary-value.alert-yellow { color: var(--yellow); }
+  .summary-value.green { color: var(--green); }
+  .summary-sub { font-size: 11px; color: var(--warm-grey); margin-top: 4px; }
+
+  /* TABLE */
+  .table-section { padding: 32px 48px 56px; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 22px; }
+  .filter-group { display: flex; gap: 8px; }
+  .filter-btn { padding: 6px 14px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; color: var(--warm-grey); }
+  .filter-btn.active { border-color: var(--ink); color: var(--ink); background: var(--ink); color: var(--cream); }
+
+  .table-wrap { background: white; border: 1px solid var(--border); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 12px 16px; border-bottom: 2px solid var(--border); font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warm-grey); white-space: nowrap; }
+  td { padding: 14px 16px; border-bottom: 1px solid var(--chalk); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF9; }
+
+  /* ESTADO BADGES */
+  .badge { display: inline-block; padding: 3px 10px; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 2px; }
+  .badge-prep { background: var(--chalk); color: var(--warm-grey); }
+  .badge-entregado { background: #EEF4EE; color: var(--green); }
+  .badge-cobrado { background: #EEF4EE; color: #1A6B3A; border: 1px solid #B8D9B8; }
+
+  /* ALERTA DÍAS */
+  .alerta { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+  .alerta-ok { color: var(--green); }
+  .alerta-warn { color: var(--yellow); }
+  .alerta-red { color: var(--red); }
+
+  /* COMISION */
+  .comision-pend { color: var(--warm-grey); }
+  .comision-ok { color: var(--green); font-weight: 500; }
+
+  /* MODAL */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(26,23,20,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .modal-backdrop.hidden { display: none; }
+  .modal { background: var(--cream); padding: 40px; width: 100%; max-width: 440px; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 20px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 6px; }
+  .modal-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); outline: none; }
+  .modal-input:focus { border-color: var(--rose); }
+  .modal-select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); outline: none; appearance: none; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-cancel { padding: 10px 20px; background: transparent; color: var(--ink); border: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+  .btn-save { padding: 10px 24px; background: var(--ink); color: var(--cream); border: none; font-family: 'DM Sans', sans-serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+  .btn-save:hover { background: var(--rose); }
+  .toast { position: fixed; bottom: 28px; right: 28px; background: var(--ink); color: var(--cream); padding: 12px 20px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  /* ACCIONES EN TABLA */
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .act-btn { padding: 3px 9px; border: 1px solid var(--border); background: white; font-family: 'DM Sans', sans-serif; font-size: 11px; cursor: pointer; transition: all 0.15s; color: var(--ink); white-space: nowrap; }
+  .act-btn:hover { border-color: var(--ink); background: var(--ink); color: var(--cream); }
+  .act-btn.primary { border-color: var(--sage); color: var(--sage); }
+  .act-btn.primary:hover { background: var(--sage); color: white; }
+
+  .empty-state { padding: 60px; text-align: center; color: var(--warm-grey); }
+  .empty-state p { font-size: 14px; margin-top: 8px; }
+
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--rose); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 900px) {
+    .summary { grid-template-columns: repeat(2, 1fr); padding: 24px; }
+    .table-section { padding: 24px; }
+    header { padding: 16px 24px; }
+    .login-box { padding: 40px 28px; margin: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-brand">Oh My Chalk</div>
+    <h1 class="login-title">Mi Panel<br>de Pedidos</h1>
+    <div class="login-error" id="login-error">Email o contraseña incorrectos</div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" autocomplete="username" placeholder="nombre@omc.com">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <span class="header-brand">Oh My Chalk</span>
+    <div class="header-info">
+      <span class="header-name" id="header-name">—</span>
+      <button class="header-logout" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <!-- RESUMEN -->
+  <div class="summary">
+    <div class="summary-card">
+      <div class="summary-label">Comisiones pendientes</div>
+      <div class="summary-value" id="sum-pendiente">—</div>
+      <div class="summary-sub">por cobrar</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Comisiones pagadas</div>
+      <div class="summary-value green" id="sum-pagada">—</div>
+      <div class="summary-sub">acumulado</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Por vencer pronto</div>
+      <div class="summary-value alert-yellow" id="sum-riesgo">—</div>
+      <div class="summary-sub">cobro entre día 20–29</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Cobro vencido</div>
+      <div class="summary-value alert-red" id="sum-vencido">—</div>
+      <div class="summary-sub">más de 30 días sin cobrar</div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-section">
+    <div class="section-header">
+      <div class="section-title">Mis Pedidos</div>
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="setFiltro('todos', this)">Todos</button>
+        <button class="filter-btn" onclick="setFiltro('pendientes', this)">Pendientes</button>
+        <button class="filter-btn" onclick="setFiltro('cobrados', this)">Cobrados</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Valor</th>
+            <th>Fecha pedido</th>
+            <th>Entrega estimada</th>
+            <th>Estado</th>
+            <th>Cobro / Alerta</th>
+            <th>Comisión</th>
+            <th>Estado comisión</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body">
+          <tr><td colspan="8" class="empty-state"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: registrar cobro -->
+<div class="modal-backdrop hidden" id="modal-cobro">
+  <div class="modal">
+    <div class="modal-title">Registrar cobro</div>
+    <div class="modal-field">
+      <label class="modal-label">Fecha de cobro</label>
+      <input type="date" class="modal-input" id="cb-fecha">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Forma de pago</label>
+      <select class="modal-select" id="cb-forma" onchange="onFormaChange()">
+        <option value="transferencia">Transferencia</option>
+        <option value="echeq">E-cheq</option>
+        <option value="cheque">Cheque</option>
+        <option value="efectivo">Efectivo</option>
+      </select>
+    </div>
+    <div class="modal-field" id="cb-archivo-row">
+      <label class="modal-label">Comprobante (PDF, imagen)</label>
+      <input type="file" class="modal-input" id="cb-file" accept=".pdf,.jpg,.jpeg,.png" style="padding:8px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarCobro()">Cancelar</button>
+      <button class="btn-save" onclick="enviarCobro()">Registrar</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let sb = null;
+let SESSION = null;
+let todosLosPedidos = [];
+let filtroActual = 'todos';
+let pedidoCobroActivo = null;
+
+async function initSupabase() {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (cfg.supabase_enabled) {
+      const { createClient } = window.supabase;
+      sb = createClient(cfg.supabase_url, cfg.supabase_anon_key);
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) { SESSION = session; onLoggedIn(); }
+    }
+  } catch (e) { console.error(e); }
+}
+
+function authHeaders() {
+  return SESSION?.access_token ? { 'Authorization': `Bearer ${SESSION.access_token}` } : {};
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) return;
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Ingresando...';
+
+  try {
+    if (sb) {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      SESSION = data.session;
+      onLoggedIn();
+    } else {
+      throw new Error('Sistema de auth no disponible');
+    }
+  } catch (e) {
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'block';
+    errEl.textContent = e.message || 'Error al ingresar';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+  document.getElementById('login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+async function onLoggedIn() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  await cargarDatos();
+}
+
+function logout() {
+  if (sb) sb.auth.signOut();
+  SESSION = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+}
+
+async function cargarDatos() {
+  try {
+    // Resumen
+    const resR = await fetch('/api/dashboard/resumen', { headers: authHeaders() });
+    if (resR.ok) {
+      const res = await resR.json();
+      document.getElementById('sum-pendiente').textContent = formatPeso(res.comision_pendiente);
+      document.getElementById('sum-pagada').textContent    = formatPeso(res.comision_pagada);
+      document.getElementById('sum-riesgo').textContent   = res.en_riesgo;
+      document.getElementById('sum-vencido').textContent  = res.vencidos;
+    }
+
+    // Pedidos
+    const pedR = await fetch('/api/pedidos', { headers: authHeaders() });
+    if (pedR.ok) {
+      todosLosPedidos = await pedR.json();
+      // Nombre del corredor desde el primer pedido
+      if (todosLosPedidos.length > 0 && todosLosPedidos[0].corredores) {
+        document.getElementById('header-name').textContent = todosLosPedidos[0].corredores.nombre;
+      }
+      renderTabla();
+    }
+  } catch (e) {
+    console.error('Error cargando datos:', e);
+  }
+}
+
+function setFiltro(filtro, btn) {
+  filtroActual = filtro;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTabla();
+}
+
+function renderTabla() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  let pedidos = todosLosPedidos;
+
+  if (filtroActual === 'pendientes') {
+    pedidos = pedidos.filter(p => p.estado !== 'cobrado');
+  } else if (filtroActual === 'cobrados') {
+    pedidos = pedidos.filter(p => p.estado === 'cobrado');
+  }
+
+  const body = document.getElementById('tabla-body');
+  if (!pedidos.length) {
+    body.innerHTML = '<tr><td colspan="8"><div class="empty-state">📦<p>No hay pedidos para mostrar</p></div></td></tr>';
+    return;
+  }
+
+  body.innerHTML = pedidos.map(p => {
+    const estadoBadge = {
+      'en_preparacion': '<span class="badge badge-prep">En preparación</span>',
+      'entregado':      '<span class="badge badge-entregado">Entregado</span>',
+      'cobrado':        '<span class="badge badge-cobrado">Cobrado</span>',
+    }[p.estado] || p.estado;
+
+    let alertaHtml = '—';
+    if (p.cobro_pendiente_validacion) {
+      alertaHtml = `<span class="alerta" style="color:var(--yellow)">⏳ Enviado, esperando validación</span>`;
+    } else if (p.estado === 'entregado' && !p.fecha_cobro && p.fecha_entrega_real) {
+      const entrega = new Date(p.fecha_entrega_real);
+      const dias = Math.floor((hoy - entrega) / 86400000);
+      alertaHtml = dias >= 30
+        ? `<span class="alerta alerta-red">🔴 ${dias} días sin cobrar</span>`
+        : dias >= 20
+        ? `<span class="alerta alerta-warn">🟡 ${dias} días — por vencer</span>`
+        : `<span class="alerta alerta-ok">🟢 ${dias} días</span>`;
+    } else if (p.estado === 'cobrado' && p.fecha_cobro) {
+      alertaHtml = `<span class="alerta alerta-ok">✓ ${formatFecha(p.fecha_cobro)}</span>`;
+    }
+
+    const valorMostrar = p.valor_factura ? formatPeso(p.valor_neto ?? p.valor_factura) : formatPeso(p.valor_estimado);
+    const valorLabel = p.valor_factura ? `<small style="color:var(--warm-grey);display:block;font-size:10px;">Neto factura</small>` : `<small style="color:var(--warm-grey);display:block;font-size:10px;">Estimado</small>`;
+
+    const comisionMonto = formatPeso(p.comision_monto || 0);
+    const comisionEstado = p.comision_estado === 'pagada'
+      ? `<span class="comision-ok">✓ Pagada</span>`
+      : `<span class="comision-pend">${p.comision_estado === 'aprobada' ? 'Aprobada' : 'Pendiente'}</span>`;
+
+    // Acciones disponibles para el corredor
+    let acciones = '';
+    if (p.factura_url) {
+      acciones += `<button class="act-btn primary" onclick="verDoc('${p.id}','factura')">Ver factura</button> `;
+    }
+    if (p.estado === 'entregado' && !p.fecha_cobro && !p.cobro_pendiente_validacion) {
+      acciones += `<button class="act-btn" onclick="abrirCobro('${p.id}')">Registrar cobro</button>`;
+    }
+    if (p.comision_estado === 'pagada' && p.comprobante_comision_url) {
+      acciones += ` <button class="act-btn primary" onclick="verDoc('${p.id}','comprobante-comision')">Ver comisión</button>`;
+    }
+
+    return `<tr>
+      <td><strong>${p.cliente}</strong></td>
+      <td>${valorMostrar}${valorLabel}</td>
+      <td>${formatFecha(p.fecha_pedido)}</td>
+      <td>${p.fecha_entrega_estimada ? formatFecha(p.fecha_entrega_estimada) : '—'}</td>
+      <td>${estadoBadge}</td>
+      <td>${alertaHtml}</td>
+      <td><strong>${comisionMonto}</strong></td>
+      <td>${comisionEstado}</td>
+      <td><div class="row-actions">${acciones || '—'}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function formatPeso(n) {
+  return '$' + parseFloat(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function formatFecha(s) {
+  if (!s) return '—';
+  const [y, m, d] = s.split('T')[0].split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ── Ver documento (factura / comprobante) ─────────────────────────────────────
+async function verDoc(pedidoId, tipo) {
+  try {
+    const r = await fetch(`/api/pedidos/${pedidoId}/${tipo}/url`, { headers: authHeaders() });
+    if (!r.ok) { showToast('No se pudo obtener el archivo', true); return; }
+    const { url } = await r.json();
+    window.open(url, '_blank');
+  } catch { showToast('Error al abrir el documento', true); }
+}
+
+// ── Registrar cobro ───────────────────────────────────────────────────────────
+function abrirCobro(pedidoId) {
+  pedidoCobroActivo = pedidoId;
+  document.getElementById('cb-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cb-forma').value = 'transferencia';
+  document.getElementById('cb-file').value = '';
+  onFormaChange();
+  document.getElementById('modal-cobro').classList.remove('hidden');
+}
+
+function cerrarCobro() {
+  pedidoCobroActivo = null;
+  document.getElementById('modal-cobro').classList.add('hidden');
+}
+
+function onFormaChange() {
+  const forma = document.getElementById('cb-forma').value;
+  document.getElementById('cb-archivo-row').style.display = forma === 'efectivo' ? 'none' : 'block';
+}
+
+async function enviarCobro() {
+  const fecha = document.getElementById('cb-fecha').value;
+  const forma = document.getElementById('cb-forma').value;
+  const file  = document.getElementById('cb-file').files[0];
+
+  if (!fecha) return showToast('Ingresá la fecha de cobro', true);
+  if (forma !== 'efectivo' && !file) return showToast('Adjuntá el comprobante de pago', true);
+
+  const btn = document.querySelector('#modal-cobro .btn-save');
+  btn.textContent = 'Enviando...'; btn.disabled = true;
+
+  try {
+    let url, fd;
+    if (forma === 'efectivo') {
+      fd = new FormData();
+      fd.append('fecha_cobro', fecha);
+      url = `/api/pedidos/${pedidoCobroActivo}/cobro-efectivo`;
+    } else {
+      fd = new FormData();
+      fd.append('file', file);
+      fd.append('fecha_cobro', fecha);
+      fd.append('forma_pago', forma);
+      url = `/api/pedidos/${pedidoCobroActivo}/comprobante-cobro`;
+    }
+    const r = await fetch(url, { method: 'POST', headers: authHeaders(), body: fd });
+    if (!r.ok) { const e = await r.json(); showToast('Error: ' + e.detail, true); return; }
+    cerrarCobro();
+    showToast(forma === 'efectivo' ? 'Cobro registrado' : 'Comprobante enviado — pendiente de validación');
+    await cargarDatos();
+  } catch { showToast('Error al enviar', true); }
+  finally { btn.textContent = 'Registrar'; btn.disabled = false; }
+}
+
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#C0392B' : '#1A1714';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.getElementById('modal-cobro').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-cobro')) cerrarCobro();
+});
+</script>
+</body>
+</html>

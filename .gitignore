@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+.env.local
+.streamlit/secrets.toml
+node_modules/
+.next/
+.ipynb_checkpoints/
+.DS_Store
