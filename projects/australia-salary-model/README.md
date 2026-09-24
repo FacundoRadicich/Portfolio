@@ -23,6 +23,8 @@
 
 The simpler model explains **87.5% of the variation in salary** with only three variables and predicts better than the model with every variable. Salaries range from roughly 90,000 to 250,000 (Australian dollars).
 
+![Base salary vs. high estimate with regression line](images/reg_base_high.png)
+
 ![Salary by sector](images/salary_by_sector.png)
 
 ## Conclusions
