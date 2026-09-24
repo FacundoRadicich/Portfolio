@@ -1,6 +1,6 @@
 # B2B Sales Intelligence (demo)
 
-**JavaScript · hand-drawn SVG charts · no dependencies** · [Live demo](https://facundoradicich.github.io/portfolio/sales-intelligence.html)
+**JavaScript · hand-drawn SVG charts · no dependencies** · [Live demo](https://facundoradicich.github.io/Portfolio/sales-intelligence.html)
 
 A replica of the analytics I built on top of the company's Odoo ERP, with **synthetic data** generated in the browser from a fixed seed. The production version pulls confirmed sale orders over XML-RPC and aggregates them in Python (the scoring and repurchase logic is in [`../odoo-automation/odoo_automation/analytics.py`](../odoo-automation/odoo_automation/analytics.py)).
 
